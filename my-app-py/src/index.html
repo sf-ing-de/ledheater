@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-br"></html>
+
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <title>Web test</title>
+    <style>
+      .div_container {
+        background-color: white;
+        opacity: 1;
+        text-align: left;
+        border-radius: 25px;
+        border-style: hidden;
+        border-color: black;
+        border-width: 0px;
+        box-sizing: border-box;
+        padding-left: 5%;
+        padding-bottom: 0.75%;
+      }
+    </style>
+  </head>
+
+  <!-- <body background="sunset_1024.jpg" > -->
+  <body>
+
+    <script src="jscolor.js"></script>
+    <script>
+      var ws;
+      if ('WebSocket' in window){
+        console.log("WebSocket is supported by your Browser!");
+        window.addEventListener("load", onLoad, false);
+         /* WebSocket is supported. You can proceed with your code*/
+      } else {
+        console.log("WebSocket is not supported by your Browser!");
+         /*WebSockets are not supported. Try a fallback method like long-polling etc*/
+      }
+      function onLoad() {
+        var wsUri = 'ws://192.168.4.1';
+        ws = new WebSocket(wsUri);
+        ws.onopen = function(event) {
+          console.log("WebSocket is open now.");
+          var ambient_temp = document.getElementById("id_ambient_temp");
+          ambient_temp.innerHTML = 90;
+          // setInterval(function(){TimerReload();},1000);
+          ws.send(JSON.stringify({
+            "id":"21061979",
+            "method": "Init.Socket",
+            "params": {
+              "p0": 0
+            }
+          }));
+        }
+        ws.onmessage = function(event) {
+          console.debug("WebSocket message received:", event.data);
+          var obj = JSON.parse(event.data);
+          if (obj.method == "PWM.GetColor") {
+            var lut = ["0","1","2","3","4","5","6","7","8","9","A","B","C","D","E","F"]
+            var tmp =  lut[parseInt(parseInt(obj.params.Red) / 16)].concat(lut[parseInt(parseInt(obj.params.Red) & 0xF)]);
+            tmp = tmp.concat(lut[parseInt(parseInt(obj.params.Green) / 16)].concat(lut[parseInt(parseInt(obj.params.Green) & 0xF)]));
+            tmp = tmp.concat(lut[parseInt(parseInt(obj.params.Blue) / 16)].concat(lut[parseInt(parseInt(obj.params.Blue) & 0xF)]));
+            document.getElementById('id_rgb').value = tmp;
+          } else if (obj.method == "PWM.GetLx") {
+            document.getElementById("id_slider_lx").value = obj.params.lx;
+            document.getElementById("id_input_lx").value = obj.params.lx;
+          } else if (obj.method == "PWM.GetTemp") {
+            document.getElementById("id_slider_temp").value = obj.params.Temp;
+            document.getElementById("id_input_temp").value = obj.params.Temp;
+          } else if (obj.method == "PWM.GetFan") {
+            document.getElementById("id_slider_fan").value = obj.params.Fan;
+            document.getElementById("id_input_fan").value = obj.params.Fan;
+          }
+        };
+        ws.onerror = function(event) {
+          console.error("WebSocket error observed:", event);
+        };
+        ws.onclose = function(event) {
+          console.log("WebSocket is closed now.");
+          ws.close();
+        };
+      }
+      function TimerReload() {
+        var ambient_temp = document.getElementById("id_ambient_temp");
+        ambient_temp.innerHTML = parseInt(ambient_temp.innerHTML,10) + 1;
+        var motion = document.getElementById("id_motion");
+        if(parseInt(ambient_temp.innerHTML,10) & 1){
+          motion.innerHTML = "ON";
+          motion.style.backgroundColor = "green";
+        } else {
+          motion.innerHTML = "OFF";
+          motion.style.backgroundColor = "red";
+        }
+        var dist = document.getElementById("id_dist");
+        dist.innerHTML = parseInt(ambient_temp.innerHTML,10) / 100;
+      }
+      function PWM_SetDC() {
+        var pin = document.getElementById('id_pin').value;
+        var duty = document.getElementById('id_duty').value;
+        var freq = document.getElementById('id_freq').value;
+        ws.send(JSON.stringify({
+          "id":"21061979",
+          "method": "PWM.SetDC",
+          "params": {
+            "Pin": pin,
+            "Duty": duty,
+            "Frequency": freq
+          }
+        }));
+      }
+      function PWM_SetColor()
+      {
+        var rgb = document.getElementById('id_rgb').value;
+        ws.send(JSON.stringify({
+          "id":"21061979",
+          "method": "PWM.SetColor",
+          "params": {
+            "Red": parseInt(rgb.slice(0,2),16),
+            "Green": parseInt(rgb.slice(2,4),16),
+            "Blue": parseInt(rgb.slice(4,6),16)
+          }
+        }));
+      }
+      function PWM_SetLx(lx)
+      {
+        ws.send(JSON.stringify({
+          "id":"21061979",
+          "method": "PWM.SetLx",
+          "params": {
+            "lx": lx
+          }
+        }));
+      }
+      function PWM_SetTemp(temp)
+      {
+        ws.send(JSON.stringify({
+          "id":"21061979",
+          "method": "PWM.SetTemp",
+          "params": {
+            "Temp": temp
+          }
+        }));
+      }
+      function PWM_SetFan(fan)
+      {
+        ws.send(JSON.stringify({
+          "id":"21061979",
+          "method": "PWM.SetFan",
+          "params": {
+            "Fan": fan
+          }
+        }));
+      }
+
+    </script>
+
+   <div class="div_container">
+     <h2 > PWM Pin</h2>
+      Pin: <input type="number" name="Pin" id="id_pin">
+      Duty cycle in %: <input type="number" name="Duty" id="id_duty">
+      PWM frequency: <input type="number" name="Frequency" id="id_freq">
+      <!-- <button onclick="WebSocketTest()">Change</button> -->
+      <button onclick="PWM_SetDC()">Change</button>
+
+    </div>
+    <div class="div_container">
+      <h2> Farbe</h2>
+      <input class="jscolor" id="id_rgb">
+      <button onclick="PWM_SetColor()">Change</button>
+    </div>
+    <div class="div_container">
+      <h2> Helligkeit</h2>
+      <input type="range" min="0" max="100" value="0" class="slider" id="id_slider_lx">
+      <input  min="0" max="100" value="0" id="id_input_lx">
+    </div>
+    <div class="div_container" >
+      <h2> Temperatur</h2>
+      <input type="range" min="0" max="100" value="0" class="slider" id="id_slider_temp">
+      <input  min="0" max="100" value="0" id="id_input_temp">
+      <p> Leuchtentemperatur: <span id="id_ambient_temp"> Test </span></p>
+    </div>
+    <div class="div_container">
+      <h2> Lüfter</h2>
+      <input type="range" min="0" max="100" value="0" class="slider" id="id_slider_fan">
+      <input  min="0" max="100" value="0" id="id_input_fan">
+    </div>
+    <div class="div_container">
+      <h2> Bewegungsmelder</h2>
+      <p><span id="id_motion">Off</span></p>
+    </div>
+    <div class="div_container">
+      <h2> Abstandsmelder</h2>
+      <p><span id="id_dist">0</span> m</p>
+    </div>
+    <script>
+    var slider_lx = document.getElementById("id_slider_lx");
+    var input_lx = document.getElementById("id_input_lx");
+    var slider_temp = document.getElementById("id_slider_temp");
+    var input_temp = document.getElementById("id_input_temp");
+    var slider_fan = document.getElementById("id_slider_fan");
+    var input_fan = document.getElementById("id_input_fan");
+
+    // Update the current slider value to the input field
+    slider_lx.oninput = function() {
+      input_lx.value = this.value;
+      PWM_SetLx(this.value);
+    }
+    // Update the current input field to the slider position
+    input_lx.onchange = function() {
+      slider_lx.value = this.value;
+      PWM_SetLx(this.value);
+    }
+    // Update the current slider value to the input field
+    slider_temp.oninput = function() {
+      input_temp.value = this.value;
+      PWM_SetTemp(this.value);
+    }
+    // Update the current input field to the slider position
+    input_temp.onchange = function() {
+      slider_temp.value = this.value;
+      PWM_SetTemp(this.value);
+    }
+    // Update the current slider value to the input field
+    slider_fan.oninput = function() {
+      input_fan.value = this.value;
+      PWM_SetFan(this.value);
+    }
+    // Update the current input field to the slider position
+    input_fan.onchange = function() {
+      slider_fan.value = this.value;
+      PWM_SetFan(this.value);
+    }
+    </script>
+
+  </body>
+
+</html>

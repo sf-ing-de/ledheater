@@ -1,0 +1,41 @@
+author: mongoose-os
+# It is here mainly for use in tests to make sure this is possible.
+description: Most minimal app - no libs, no networking, no RPC, nothing
+version: 1.0
+manifest_version: 2017-05-18
+
+libs_version: ${mos_version}
+modules_version: ${mos_version}
+mongoose_os_version: ${mos_version}
+
+filesystem:
+  - fs
+
+sources:
+  - src
+
+tags:
+  - c
+
+config_schema:
+  - ["device.id", "LEDHeater"]
+  - ["wifi.sta.dhcp_hostname", "LEDHeater"]
+  - ["wifi.ap.hostname", "LEDHeater"]
+  - ["wifi.ap.ssid", "LEDHeater"]
+  - ["wifi.ap.pass", "gh0m1oka"]
+  - ["i2c.enable", true]
+  - ["i2c.sda_gpio", 2]
+  - ["i2c.freq", 100000]
+  - ["debug.level", 3]
+
+libs:
+  - origin: https://github.com/mongoose-os-libs/boards
+  - origin: https://github.com/mongoose-os-libs/core
+  - origin: https://github.com/mongoose-os-libs/wifi
+  - origin: https://github.com/mongoose-os-libs/i2c
+  - origin: https://github.com/mongoose-os-libs/rpc-ws
+  - origin: https://github.com/mongoose-os-libs/rpc-uart
+  - origin: https://github.com/mongoose-os-libs/rpc-service-i2c
+  - origin: https://github.com/mongoose-os-libs/rpc-service-gpio
+  - origin: https://github.com/mongoose-os-libs/pwm
+  - origin: https://github.com/mongoose-os-libs/http-server
